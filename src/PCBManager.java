@@ -8,7 +8,7 @@ public final class PCBManager{
         return pcbList.size();
     }
 
-    public void addPCB(PCB pcb){
+    public static void addPCB(PCB pcb){
         pcbList.add(pcb);
     }
 

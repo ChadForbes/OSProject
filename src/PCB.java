@@ -20,6 +20,7 @@ public class PCB {
 
     //Job instructions
     private int jobID;
+    private int jobPriority;
     private int jobDiskIndex;
     private int jobMemoryIndex;
     private int jobSize;
@@ -37,6 +38,7 @@ public class PCB {
     private int[] registers;
     private int programCounter;
     private String[] cache;
+    private int cacheSize;
 
     public int getCacheSize() {
         return cache.length;

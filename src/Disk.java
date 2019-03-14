@@ -10,13 +10,13 @@ public class Disk {
     public void Loader(String fileName) {
         int currentIndex = 0;
         PCB pcb;
-        int jobID;
+        int jobID = 0;
         int jobSize;
         String line;
         String[] removedWhitespace;
 
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(filename));
+            BufferedReader reader = new BufferedReader(new FileReader(fileName));
             line = reader.readLine();
             while(line != null){
                 if(line.contains("//")){
@@ -43,7 +43,7 @@ public class Disk {
                 }
                 else {
                     write(currentIndex, line);
-                    currentDiskIndex++;
+                    currentIndex++;
                 }
                 line = reader.readLine();
             }
@@ -54,7 +54,7 @@ public class Disk {
     }
 
     public String read(int index) {
-        return diskMemory[index];
+        return disk[index];
     }
 
     public void write(int index, String instruction){disk[index] = instruction;}

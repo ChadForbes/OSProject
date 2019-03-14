@@ -1,26 +1,61 @@
 //Disk class for OS Project
 //Declare RAM separately in a diff class
-public class Disk {
-    List<String> diskMemory = new ArrayList<String>();
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
-    public void Loader(String fileName){
-        BufferedReader read = new BufferedReader(new FileReader(fileName));
-        //While the next line is not null
-        while((String line = read.readLine()) != null) {
-            diskMemory.add(line);
-            //System.out.println(line);
+public class Disk {
+    String disk[] = new String[4096];
+
+    public void Loader(String fileName) {
+        int currentIndex = 0;
+        PCB pcb;
+        int jobID;
+        int jobSize;
+        String line;
+        String[] removedWhitespace;
+
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(filename));
+            line = reader.readLine();
+            while(line != null){
+                if(line.contains("//")){
+                    if(line.contains("JOB")){
+                        //Splits the line into tokens separated by whitespaces
+                        removedWhitespace = line.split("\\s+");
+                        jobID = Integer.parseInt(removedWhitespace[2], 16);
+                        jobSize = Integer.parseInt(removedWhitespace[3], 16);
+                        //jobPriority = Integer.parseInt(removedWhitespace[4], 16); <-- we dont use this yet
+                        pcb = new PCB(jobID, jobSize, currentIndex);
+                        PCBManager.addPCB(pcb);
+                    }
+                    else if (line.contains("DATA")) {
+                        removedWhitespace = line.split("\\s+");
+                        PCB currentPCB = PCBManager.getPCB(jobID);
+                        currentPCB.setDataDiskIndex(currentIndex);
+                        currentPCB.setInputBuffer(Integer.parseInt(removedWhitespace[2]));
+                        currentPCB.setOutputBuffer(Integer.parseInt(removedWhitespace[3]));
+                        currentPCB.setTempBuffer(Integer.parseInt(removedWhitespace[4]));
+                    }
+                    else if (line.contains("END")){
+                        //nothing
+                    }
+                }
+                else {
+                    write(currentIndex, line);
+                    currentDiskIndex++;
+                }
+                line = reader.readLine();
+            }
+            reader.close();
+        } catch (IOException e){
+            e.printStackTrace();
         }
-        read.close();
     }
 
-    public String getOpcodeAt(int index){
+    public String read(int index) {
         return diskMemory[index];
     }
-//    public static void main(String[]args){
-//        Disk d = new Disk();
-//        d.Loader("asdf.txt");
-//    }
-}
 
-//If we want to change this ArrayList to String[], use this
-//String[] disk = diskMemory.toArray(new String[]{});
+    public void write(int index, String instruction){disk[index] = instruction;}
+}

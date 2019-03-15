@@ -183,7 +183,7 @@ public class MMU {
 		int physAddr = -1;
 		for(Frame f : frames)
 			if(f.processID == pcb.getJobID()) {
-				physAddr = f.processID * PAGE_SIZE;
+				physAddr = f.frameNumber * PAGE_SIZE;
 				break;
 			}
 		
@@ -191,7 +191,7 @@ public class MMU {
 		if(physAddr == -1)
 			return -1;
 		
-		physAddr += virtualAddress;
+		physAddr += virtualAddress % PAGE_SIZE;
 		return physAddr;
 	}
 	

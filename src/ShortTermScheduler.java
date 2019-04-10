@@ -1,3 +1,4 @@
+// Author by Chad Forbes
 import java.util.ArrayList;
 
 public class ShortTermScheduler {

@@ -12,22 +12,22 @@ public class MMU {
 	//
 	// static data
 	//
-	
+
 	private static final int PAGE_SIZE = 64;
 	private static final int NUM_PAGES = RAM.RAM_SIZE / PAGE_SIZE;
-	
+
 	//
 	// instance data
 	//
-	
+
 	private RAM ram;
 	private Hashtable<Integer, List<Frame>> frameTable;
 	private List<Integer> freeFrames;
-	
+
 	//
 	// constructor
 	//
-	
+
 	public MMU() {
 		ram = new RAM();
 		frameTable = new Hashtable<Integer, List<Frame>>(NUM_PAGES);
@@ -35,11 +35,11 @@ public class MMU {
 		for(int lcv = 0; lcv < NUM_PAGES; lcv++)
 			freeFrames.add(lcv);
 	}
-	
+
 	//
 	// instance methods
 	//
-	
+
 	/**
 	 * Read the contents of memory at the given address.
 	 * @param virtualAddress The virtual address to read from.
@@ -49,14 +49,14 @@ public class MMU {
 	 */
 	public String read(int virtualAddress, PCB pcb) {
 		int physAddr = calcEffectiveAddress(virtualAddress, pcb);
-		
+
 		// if there is no frame for the given process at the v. address:
 		if(physAddr == -1)
 			return null;
-		
+
 		return ram.read(physAddr);
 	}
-	
+
 	/**
 	 * Writes the given word into the given address for the process.
 	 * @param virtualAddress The virtual address to write to.
@@ -66,15 +66,15 @@ public class MMU {
 	 */
 	public boolean write(int virtualAddress, PCB pcb, String word) {
 		int physAddr = calcEffectiveAddress(virtualAddress, pcb);
-		
+
 		// if there is no frame for the given process at the v. address:
 		if(physAddr == -1)
 			return false;
-		
+
 		ram.write(physAddr, word);
 		return true;
 	}
-	
+
 	/**
 	 * Allocates memory space for the process.
 	 * @param pcb The PCB of the process being allocated.
@@ -82,20 +82,20 @@ public class MMU {
 	 * otherwise.
 	 */
 	public boolean allocate(PCB pcb) {
-		int numPages = (pcb.getJobSize() + PAGE_SIZE - 1) / PAGE_SIZE; 
-		
+		int numPages = (pcb.getJobSize() + PAGE_SIZE - 1) / PAGE_SIZE;
+
 		// find pages to allocate:
 		List<Integer> pages = new ArrayList<Integer>(numPages);
 		for(int pageNum = 0; pageNum < NUM_PAGES; pageNum++) {
 			if(frameTable.get(pageNum) == null)
 				pages.add(pageNum);
-			
+
 			if(pages.size() == numPages)
 				break;
 		}
 		if(pages.size() != numPages) // if not enough pages to allocate
 			return false;
-		
+
 		// allocate the pages, back-to-front:
 		int lastPage = -1;
 		for(int lcv = numPages - 1; lcv >= 0; lcv--) {
@@ -107,14 +107,14 @@ public class MMU {
 			newFrameList.add(newFrame);
 			frameTable.put(pages.get(lcv), newFrameList);
 		}
-		
+
 		// set pc and address index for job:
 		pcb.setJobMemoryIndex(lastPage * PAGE_SIZE);
 		pcb.setProgramCounter(pcb.getJobMemoryIndex());
-		
+
 		return true; // successful allocation
 	}
-	
+
 	/**
 	 * Deallocates the memory reserved for the process with the given PCB.
 	 * @param pcb The PCB of the process having its memory deallocated.
@@ -135,7 +135,7 @@ public class MMU {
 			nextPage = frame.nextPage;
 		}
 	}
-	
+
 	/**
 	 * Increments the given PC to the next address of the process.
 	 * @param pcb The PCB of the process being executed.
@@ -147,7 +147,7 @@ public class MMU {
 		// if normal increment:
 		if(currentPC % PAGE_SIZE != 0)
 			return currentPC + 1;
-		
+
 		// if increment to new page:
 		List<Frame> frames = frameTable.get(calcPageNumber(currentPC));
 		int nextPage = -1;
@@ -156,14 +156,14 @@ public class MMU {
 				nextPage = f.nextPage;
 				break;
 			}
-		
+
 		if(nextPage == -1) // if the frame does not exist
 			return -1;
-		
+
 		// return the first address of the next page:
 		return nextPage * PAGE_SIZE;
 	}
-	
+
 	/**
 	 * Finds the physical address mapped to the given virtual address for the
 	 * process.
@@ -179,26 +179,26 @@ public class MMU {
 		List<Frame> frames = frameTable.get(calcPageNumber(virtualAddress));
 		if(frames == null) // if no frames at that index
 			return -1;
-		
+
 		int physAddr = -1;
 		for(Frame f : frames)
 			if(f.processID == pcb.getJobID()) {
 				physAddr = f.frameNumber * PAGE_SIZE;
 				break;
 			}
-		
+
 		// if no frame found for the process in the given virtual address:
 		if(physAddr == -1)
 			return -1;
-		
+
 		physAddr += virtualAddress % PAGE_SIZE;
 		return physAddr;
 	}
-	
+
 	private int calcPageNumber(int virtualAddress) {
 		return virtualAddress / PAGE_SIZE;
 	}
-	
+
 	private Frame getFrame(int pageNumber, PCB pcb) {
 		List<Frame> frames = frameTable.get(pageNumber);
 		for(Frame f : frames)
@@ -206,20 +206,20 @@ public class MMU {
 				return f;
 		return null;
 	}
-	
+
 	//
 	// non-constituent inner type
 	//
-	
+
 	private class Frame {
 		// instance data
-		
+
 		public final int processID;
 		public final int frameNumber;
 		public final int nextPage;
-		
+
 		// constructor
-		
+
 		public Frame(int processID, int frameNumber, int nextPage) {
 			this.processID = processID;
 			this.frameNumber = frameNumber;

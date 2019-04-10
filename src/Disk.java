@@ -57,5 +57,5 @@ public class Disk {
         return disk[index];
     }
 
-    public void write(int index, String instruction){disk[index] = instruction;}
+    public static void write(int index, String instruction){disk[index] = instruction;}
 }

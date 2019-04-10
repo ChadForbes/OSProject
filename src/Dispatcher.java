@@ -19,7 +19,7 @@ public class Dispatcher {
             if (Driver.CPU.isIdle() && Driver.CPU.shouldTerminate()){
                 Driver.CPU.unload(PCBManager.getPCB(curJobCount));
                 MMU.syncCache(PCBManager.getPCB(curJobCount));
-                RAM.deallocatePCB(PCBManager.getPCB(curJobCount));
+                MMU.deallocate(PCBManager.getPCB(curJobCount));
                 /*if (PCBManager.getPCB(curJobCount).getProcessStatus())== {
                 }*/
             }

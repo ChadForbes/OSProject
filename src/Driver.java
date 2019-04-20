@@ -1,34 +1,33 @@
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.LineBorder;
+import javax.swing.border.MatteBorder;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.util.concurrent.*;
 
-/**
- * Created by Stephen on 2/8/16.
- */
 
 
 public class Driver {
-    public static int CPU_COUNT =1;
-    public static int SORT_ALGORITHM=1;
-    public static int SLEEP_INTERVAL=15;
+
     public Driver() {
 
         LongTermScheduler = new LongTermScheduler();
         ShortTermScheduler = new ShortTermScheduler();
-        // CPU = new CPU();
     }
 
-    public Driver(int numOfCPUs){
+    public Driver(int numOfCPUs, SchedulingType schedulingType){
         LongTermScheduler = new LongTermScheduler();
         ShortTermScheduler = new ShortTermScheduler();
-        // CPU = new CPU();
+        Driver.schedulingType = schedulingType;
         CPUs = new CPU[numOfCPUs];
-        // Arrays.fill(CPUs, new CPU());
 
         for (int i = 0; i < CPUs.length; i++)
-            // CPUs[i] = new CPU();
 
 
         cpuFutures = new Future<?>[numOfCPUs];
@@ -37,17 +36,25 @@ public class Driver {
         isOSComplete = false;
         commands = new String[31];
     }
-    public static void init(int numOfCPUs, int sleep)
+    
+    //Uses user input from panel to set our base values.
+    public static void init(int numOfCPUs, SchedulingType schedType, int sleep)
     {
+        schedulingType = schedType;
+        CPUs = new CPU[numOfCPUs];
+        CpuMetrics = new CPUMetrics[numOfCPUs];
         LongTermScheduler = new LongTermScheduler();
         ShortTermScheduler = new ShortTermScheduler();
-        // CPU = new CPU();
-        CPUs = new CPU[numOfCPUs];
-        //  jobMetricses = new JobMetrics[50];
-        // Arrays.fill(CPUs, new CPU());
+
 
         for (int i = 0; i < CPUs.length; i++)
             CPUs[i] = new CPU(i+1);
+
+        for (int i = 0; i < CpuMetrics.length; i++)
+            CpuMetrics[i] = new CPUMetrics(i+1);
+
+
+
 
         cpuFutures = new Future<?>[numOfCPUs];
         executorService = Executors.newFixedThreadPool(numOfCPUs);
@@ -62,7 +69,10 @@ public class Driver {
     public static LongTermScheduler LongTermScheduler;
     public static ShortTermScheduler ShortTermScheduler;
     public static CPU CPU;
+    public static SchedulingType schedulingType;
     public static CPU[] CPUs;
+    public static CPUMetrics[] CpuMetrics;
+    public static JobMetrics[] jobMetricses;
     public static ExecutorService executorService;
     public static Future<?>[] cpuFutures;
     public static ArrayList<String> jobsRan;
@@ -76,10 +86,14 @@ public class Driver {
     public static long  osStartTime = 0;
     public static long osEndTIme = 0;
 
-
+    /* Starts our RAM, Disk, and PCB manager, as well as tracking run time.
+     * Sends our program file into our loader then starts loader
+     * Sets job metrics for each job
+     * Runs our OS until our PCB indicates completion
+     * 
+     */
     public static void run() throws IOException
     {
-
         RAM.init();
         Disk.init();
         PCBManager.init();
@@ -96,17 +110,17 @@ public class Driver {
         String s = Disk.readDisk(2);
         System.out.println("DISK TEST: " + s);
 
-        while (custardStands())
+        while (stillWorking())
         {
             ready();
-            aim((schedulingType != null)? schedulingType : SchedulingType.FIFO);
-            fire();
+            prep((schedulingType != null)? schedulingType : SchedulingType.FIFO);
+            execute();
         }
         executorService.shutdown();
 
     }
 
-    public static boolean custardStands()
+    public static boolean stillWorking()
     {
         return  !PCBManager.allJobsDone() && !isOSComplete;
     }
@@ -116,22 +130,22 @@ public class Driver {
         LongTermScheduler.Schedule();
     }
 
-    public static void aim(SchedulingType type)
+    public static void prep(SchedulingType type)
     {
         ShortTermScheduler.Schedule(type);
     }
 
-    public static void fire()
+    public static void execute()
     {
         Dispatcher.dispatch();
-        for (int i  = 0; i <CPUs.length && custardStands(); i++)
+        for (int i  = 0; i <CPUs.length && stillWorking(); i++)
         {
             if(cpuFutures[i] != null && cpuFutures[i].isCancelled())
                 System.out.println("XXXXXXX CANCELLED XXXXXX" + i);
             try {
 
-                if(cpuFutures[i] != null  && cpuFutures[i].isDone())
-                    cpuFutures[i].get();
+            if(cpuFutures[i] != null  && cpuFutures[i].isDone())
+                cpuFutures[i].get();
             }
             catch (Exception ex)
             {
@@ -144,27 +158,57 @@ public class Driver {
                 commands[CPUs[i].currentJobNumber()] += "\nRUNNING JOB: " + CPUs[i].currentJobNumber() + "\tON CPU: " + i;
             }
         }
-//        System.out.println("\nfire()");
-//        for (int  i = 0; i < jobsRan.size(); i++)
-//            System.out.println(jobsRan.get(i));
-    }
-
-    public static boolean isCPUIdle(){
-
-        if (CPU.isIdle())
-            return false;
-        return true;
     }
 
     public static boolean areAllCPUsIdle()
     {
-        //update when multi cored.
         for (int i = 0; i < CPUs.length; i++)
         {
             if(!CPUs[i].isIdle())
                 return false;
         }
         return true;
+    }
+
+    public static void updateCpuMetric(final CPUMetrics metrics)
+    {
+        CpuMetrics[metrics.cpuNumber-1].update(metrics);
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                MainFrame.updateCPUMetrics(metrics);
+            }
+        });
+    }
+
+    public static void updateJobMetrics(final JobMetrics jobMetrics)
+    {
+        jobMetricses[jobMetrics.getJobNumber()-1].update(jobMetrics);
+        if(jobMetricses[jobMetrics.getJobNumber()-1].getWaitTime() > 0)
+            totalWaitTime += jobMetricses[jobMetrics.getJobNumber()-1].getWaitTime();
+        if(jobMetricses[jobMetrics.getJobNumber()-1].getRunTime() > 0)
+            totalRunTime += jobMetricses[jobMetrics.getJobNumber()-1].getRunTime();
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                MainFrame.updateJobMetrics(jobMetrics);
+            }
+        });
+
+    }
+
+    public static void updateOsMetric()
+    {
+        int jobsInProgress = numberOfBusyCpus();
+
+        final OSMetrics osMetrics = new OSMetrics(PCBManager.getJobListSize(), numberOfBusyCpus(), completedJobs, getAverageWaitTime(), getAverageRunTime());
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                MainFrame.updateOsMetrics(osMetrics);
+            }
+        });
+
     }
 
     private static double getAverageWaitTime()
@@ -196,7 +240,8 @@ public class Driver {
         }
         return (double)runTime/jobs;
     }
-
+    
+    //
     private static int numberOfBusyCpus()
     {
         int count = 0;
@@ -213,16 +258,39 @@ public class Driver {
         return (double)((osEndTIme - osStartTime)/1000.0);
     }
 
-
+    
+    //Starts OS 
     public static void main(String [] args) {
 
+
+        System.out.println("starting OS...");
+        MainFrame.buildUI();
+        MainFrame.driverFunction = new Callable() {
+            @Override
+            public Object call() throws Exception {
+            	//Sets OS's settings based off of user input
                 Driver.init(Integer.parseInt(input1.getText()), SchedulingType.fromValue(box.getSelectedIndex()+1),Integer.parseInt(input2.getText()) );
                 Driver.run();
+                return null;
+            }
         };
 
 
 
+
         int numberOfTimesDriverRuns = 0;
+
+
+    }
+
+
+
+    public static JTextField input1=new JTextField("4", 3);
+    public static JTextField input2=new JTextField("0", 4);
+    public static JComboBox box;
+    public static ConsoleConstructor con=new ConsoleConstructor();
+  
+
 
 
 }

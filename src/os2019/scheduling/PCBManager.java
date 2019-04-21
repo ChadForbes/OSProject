@@ -1,4 +1,7 @@
+package os2019.scheduling;
 import java.util.ArrayList;
+
+import os2019.processing.PCB;
 
 //This will be very important to expand in phase 2
 public final class PCBManager{

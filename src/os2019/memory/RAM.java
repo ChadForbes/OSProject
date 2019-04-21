@@ -1,4 +1,6 @@
-public class RAM {
+package os2019.memory;
+
+class RAM {
 	//
 	// static data
 	//
@@ -24,6 +26,9 @@ public class RAM {
 	//
 	
 	public String read(int physicalAddress) {
+		if(physicalAddress < 0 || physicalAddress >= contents.length)
+			return null;
+		
 		return contents[physicalAddress];
 	}
 	

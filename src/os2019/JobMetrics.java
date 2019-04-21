@@ -1,3 +1,4 @@
+package os2019;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -107,7 +108,7 @@ public class JobMetrics {
 		
 		for(Metric m : entries.values())
 			if(m.assignedCPU == cpuID)
-				retStr += String.format("%1$s\\t%2$s\\t%3$s\\t%4$s\\t%5$s\n",
+				retStr += String.format("%1$s\t%2$s\t%3$s\t%4$s\t%5$s\t6$s\n",
 						m.processID, m.calcWaitTime(), m.calcCompletionTime(),
 						m.getIOOps(), m.percentRAMUsage,
 						m.getPercentCacheUsage());

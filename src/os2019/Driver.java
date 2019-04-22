@@ -37,7 +37,6 @@ public final class Driver {
 	public final ShortTermScheduler shortTermScheduler;
 	public final LongTermScheduler longTermScheduler;
 	public final DMAManager dmaManager;
-	
 	private final ExecutorService cpuThreadPool;
 	
 	//
@@ -82,7 +81,7 @@ public final class Driver {
 	public void doSimulation() throws InterruptedException {
 		System.out.println("Simulation beginning.");
 		
-		disk.loadFromFile(JOBS_FILE_PATH);
+		Loader.loadFromFile(JOBS_FILE_PATH);
 		do {
 			longTermScheduler.attemptLoadToRAM();
 			
